@@ -1,0 +1,1166 @@
+```html
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teka Language - BETA
+</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            500: '#06b6d4',
+                            600: '#0284c7',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- PeerJS for Serverless WebRTC Multiplayer -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            user-select: none;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* Dark Mode Styling */
+        .dark body {
+            background: linear-gradient(135deg, #090d16 0%, #111827 40%, #0f172a 100%);
+            background-attachment: fixed;
+            color: #f8fafc;
+        }
+        .dark .glass-panel {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .dark .glass-card {
+            background: rgba(30, 41, 59, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #f1f5f9;
+        }
+        .dark .drop-target-area {
+            background: rgba(15, 23, 42, 0.6);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Light Mode Styling */
+        html:not(.dark) body {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%);
+            background-attachment: fixed;
+            color: #0f172a;
+        }
+        html:not(.dark) .glass-panel {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.08);
+        }
+        html:not(.dark) .glass-card {
+            background: #ffffff;
+            border: 1px solid rgba(0, 0, 0, 0.12);
+            color: #1e293b;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        html:not(.dark) .drop-target-area {
+            background: rgba(241, 245, 249, 0.9);
+            border-color: rgba(0, 0, 0, 0.2);
+        }
+
+        /* Interactive Card States */
+        .draggable-source {
+            touch-action: none;
+            cursor: grab;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .draggable-source:hover {
+            transform: translateY(-2px);
+            border-color: #38bdf8 !important;
+            box-shadow: 0 10px 25px -5px rgba(56, 189, 248, 0.3);
+        }
+        .draggable-source.selected-click {
+            border-color: #f43f5e !important;
+            background: rgba(244, 63, 94, 0.15) !important;
+            box-shadow: 0 0 20px rgba(244, 63, 94, 0.4);
+            animation: pulse-ring 1.5s infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(244, 63, 94, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); }
+        }
+
+        .drop-target.drag-over {
+            border-color: #f43f5e !important;
+            background-color: rgba(244, 63, 94, 0.15) !important;
+            transform: scale(1.02);
+        }
+
+        .matched-correct {
+            background-color: rgba(16, 185, 129, 0.2) !important;
+            border-color: #10b981 !important;
+        }
+        .matched-error {
+            animation: shake-error 0.4s ease-in-out;
+            border-color: #ef4444 !important;
+        }
+
+        @keyframes shake-error {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.4); border-radius: 4px; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between overflow-x-hidden">
+
+    <!-- HEADER / NAVIGATION -->
+    <header class="glass-panel sticky top-0 z-40 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-gradient-to-tr from-pink-500 via-purple-500 to-cyan-400 p-2.5 rounded-2xl shadow-lg shadow-pink-500/20">
+                    <i class="fa-solid fa-gamepad text-white text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-black text-lg sm:text-xl bg-clip-text text-transparent bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500">
+                        LexiMatch <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-pink-500/20 text-pink-500 dark:text-pink-300 border border-pink-500/30">FYP Edition</span>
+                    </h1>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:block">Malay & Regional Dialects WebRTC Platform</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2">
+                <!-- Theme Switcher -->
+                <button id="btn-theme-toggle" class="p-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:opacity-80 transition" title="Toggle Light/Dark Theme">
+                    <i class="fa-solid fa-moon dark:hidden text-indigo-600"></i>
+                    <i class="fa-solid fa-sun hidden dark:block text-amber-400"></i>
+                </button>
+
+                <!-- Global Leaderboard Button -->
+                <button id="btn-open-leaderboard" class="flex items-center space-x-1.5 text-xs font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 px-3 py-2 rounded-xl transition">
+                    <i class="fa-solid fa-trophy"></i>
+                    <span class="hidden sm:inline">Leaderboard</span>
+                </button>
+
+                <!-- Multiplayer Lobby -->
+                <button id="btn-open-lobby" class="flex items-center space-x-1.5 text-xs font-bold bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white px-3.5 py-2 rounded-xl shadow-md transition">
+                    <i class="fa-solid fa-users"></i>
+                    <span class="hidden sm:inline">Lobby</span>
+                </button>
+
+                <!-- User Profile -->
+                <button id="btn-user-profile" class="flex items-center space-x-2 bg-slate-200 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 px-3 py-1.5 rounded-xl text-xs font-semibold transition">
+                    <div class="w-6 h-6 rounded-full bg-gradient-to-tr from-cyan-500 to-indigo-500 flex items-center justify-center text-[10px] text-white font-bold" id="user-avatar-badge">S</div>
+                    <span id="user-display-name" class="max-w-[80px] truncate">Student</span>
+                </button>
+
+                <button id="btn-sound-toggle" class="p-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:opacity-80 transition" title="Toggle Sound">
+                    <i class="fa-solid fa-volume-high text-pink-500" id="sound-icon"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN APP WRAPPER -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow w-full">
+        <!-- TOP CONTROL PANEL & METRICS -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+            <!-- Settings Card -->
+            <div class="glass-panel rounded-3xl p-5 shadow-lg flex flex-col justify-between">
+                <div>
+                    <h2 class="text-xs font-bold text-pink-500 uppercase tracking-wider mb-3 flex items-center">
+                        <i class="fa-solid fa-sliders mr-2"></i> Module Configuration
+                    </h2>
+
+                    <div class="mb-3">
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Target Language / Dialect</label>
+                        <select id="select-dialect" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs sm:text-sm rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pink-500">
+                            <option value="standard">Standard Malay (Bahasa Melayu)</option>
+                            <option value="kedah">Loghat Kedah (Northern)</option>
+                            <option value="kelantan">Loghat Kelantan (East Coast)</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Difficulty Level</label>
+                        <div class="grid grid-cols-3 gap-1.5">
+                            <button data-level="beginner" class="btn-diff-select py-1.5 text-xs rounded-xl font-bold border bg-pink-600 border-pink-500 text-white shadow-sm">Beginner</button>
+                            <button data-level="intermediate" class="btn-diff-select py-1.5 text-xs rounded-xl font-semibold border bg-slate-200 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300">Interm.</button>
+                            <button data-level="advanced" class="btn-diff-select py-1.5 text-xs rounded-xl font-semibold border bg-slate-200 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300">Advanced</button>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="btn-reset-session" class="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:opacity-95 text-white font-extrabold py-2.5 rounded-xl transition shadow-md flex items-center justify-center space-x-2 text-xs">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                    <span>Shuffle New Deck</span>
+                </button>
+            </div>
+
+            <!-- Stats Metrics -->
+            <div class="lg:col-span-3 grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div class="glass-panel p-4 rounded-3xl flex flex-col justify-between">
+                    <span class="text-xs font-bold text-slate-400 uppercase">Score</span>
+                    <div class="my-1 flex items-baseline">
+                        <span id="stat-score" class="text-3xl font-black text-pink-500">0</span>
+                        <span class="text-xs text-slate-400 ml-1">pts</span>
+                    </div>
+                    <span class="text-[11px] text-pink-400 font-semibold"><i class="fa-solid fa-bolt mr-1"></i> Streak: <span id="stat-streak">1.0</span>x</span>
+                </div>
+
+                <div class="glass-panel p-4 rounded-3xl flex flex-col justify-between">
+                    <span class="text-xs font-bold text-slate-400 uppercase">Timer</span>
+                    <div class="my-1 flex items-baseline">
+                        <span id="stat-timer" class="text-3xl font-black text-purple-500">00:00</span>
+                    </div>
+                    <span class="text-[11px] text-slate-400"><i class="fa-solid fa-clock mr-1"></i> Active Session</span>
+                </div>
+
+                <div class="glass-panel p-4 rounded-3xl flex flex-col justify-between">
+                    <span class="text-xs font-bold text-slate-400 uppercase">Accuracy</span>
+                    <div class="my-1 flex items-baseline">
+                        <span id="stat-accuracy" class="text-3xl font-black text-emerald-500">100</span>
+                        <span class="text-xs text-slate-400 ml-1">%</span>
+                    </div>
+                    <span id="stat-attempts" class="text-[11px] text-slate-400">0 Matches</span>
+                </div>
+
+                <div class="glass-panel p-4 rounded-3xl flex flex-col justify-between">
+                    <span class="text-xs font-bold text-slate-400 uppercase">Progress</span>
+                    <div class="my-1">
+                        <div class="flex justify-between items-center text-xs mb-1 font-bold">
+                            <span id="stat-progress-text" class="text-cyan-500">0 / 4</span>
+                            <span id="stat-level-title" class="text-slate-400">Beginner</span>
+                        </div>
+                        <div class="w-full bg-slate-200 dark:bg-slate-900 h-2 rounded-full overflow-hidden">
+                            <div id="stat-progress-bar" class="bg-gradient-to-r from-pink-500 to-cyan-400 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <span class="text-[11px] text-slate-400"><i class="fa-solid fa-layer-group mr-1"></i> Placement Arena</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- MAIN GAME & REAL-TIME LEADERBOARD SECTION -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <!-- Left 3 Cols: Placement Matching Arena -->
+            <div class="lg:col-span-3 glass-panel rounded-3xl p-4 sm:p-6 shadow-xl relative min-h-[480px] flex flex-col justify-between">
+                <div>
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3 mb-4 gap-2">
+                        <div>
+                            <h3 class="font-black text-base flex items-center">
+                                <i class="fa-solid fa-hand-pointer text-pink-500 mr-2"></i> Card Placement Area
+                            </h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">
+                                Drag source card to matching slot, or tap source card then tap target slot.
+                            </p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span id="badge-dialect" class="text-xs font-bold px-2.5 py-1 rounded-xl bg-pink-500/10 text-pink-500 border border-pink-500/20">Standard Malay</span>
+                            <span id="badge-level" class="text-xs font-bold px-2.5 py-1 rounded-xl bg-cyan-500/10 text-cyan-500 border border-cyan-500/20">Beginner</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Source Cards -->
+                        <div class="drop-target-area rounded-2xl p-3 border">
+                            <h4 class="text-xs font-bold text-pink-500 uppercase tracking-wider mb-3 flex items-center">
+                                <i class="fa-solid fa-language mr-1.5"></i> Regional Terms / Idioms
+                            </h4>
+                            <div id="source-terms-container" class="space-y-2.5"></div>
+                        </div>
+
+                        <!-- Target Slots -->
+                        <div class="drop-target-area rounded-2xl p-3 border">
+                            <h4 class="text-xs font-bold text-cyan-500 uppercase tracking-wider mb-3 flex items-center">
+                                <i class="fa-solid fa-bullseye mr-1.5"></i> English Meaning / Equivalent
+                            </h4>
+                            <div id="target-slots-container" class="space-y-2.5"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VICTORY OVERLAY -->
+                <div id="victory-modal" class="hidden absolute inset-0 bg-slate-950/90 backdrop-blur-md rounded-3xl z-30 flex flex-col items-center justify-center p-6 text-center text-white">
+                    <div class="w-16 h-16 bg-gradient-to-tr from-pink-500 to-cyan-400 rounded-2xl flex items-center justify-center text-white text-3xl shadow-lg mb-3 animate-bounce">
+                        <i class="fa-solid fa-crown"></i>
+                    </div>
+                    <h2 class="text-2xl font-black mb-1">Deck Cleared!</h2>
+                    <p class="text-slate-300 text-xs max-w-xs mb-4">All language cards matched successfully.</p>
+
+                    <div class="grid grid-cols-3 gap-3 w-full max-w-xs bg-slate-900 border border-slate-800 rounded-xl p-3 mb-5 text-center">
+                        <div>
+                            <span class="block text-[10px] text-slate-400 uppercase font-bold">Score</span>
+                            <span id="modal-score" class="text-lg font-black text-pink-400">0</span>
+                        </div>
+                        <div>
+                            <span class="block text-[10px] text-slate-400 uppercase font-bold">Time</span>
+                            <span id="modal-time" class="text-lg font-black text-purple-300">00:00</span>
+                        </div>
+                        <div>
+                            <span class="block text-[10px] text-slate-400 uppercase font-bold">Accuracy</span>
+                            <span id="modal-accuracy" class="text-lg font-black text-emerald-400">0%</span>
+                        </div>
+                    </div>
+
+                    <button id="btn-modal-next" class="bg-gradient-to-r from-pink-500 to-cyan-500 text-white font-extrabold px-6 py-2.5 rounded-xl shadow-lg transition text-xs">
+                        Next Deck Challenge
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Col: Live In-Game Scoreboard (VS Opponents / Bots) -->
+            <div class="glass-panel rounded-3xl p-4 shadow-xl flex flex-col justify-between">
+                <div>
+                    <h3 class="text-xs font-bold text-amber-500 uppercase tracking-wider mb-3 flex items-center justify-between">
+                        <span><i class="fa-solid fa-list-ol mr-1.5"></i> Live Match Scoreboard</span>
+                        <span class="text-[10px] bg-amber-500/20 text-amber-500 px-1.5 py-0.5 rounded font-bold">LIVE</span>
+                    </h3>
+
+                    <div id="live-scoreboard-list" class="space-y-2">
+                        <!-- Dynamic Player / Bot Roster Score Cards -->
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800">
+                    <p class="text-[11px] text-slate-400 text-center">
+                        Score updates in real-time as you and your lobby peers or AI bots make matches!
+                    </p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- GLOBAL LEADERBOARD MODAL -->
+    <div id="leaderboard-modal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="glass-panel rounded-3xl max-w-lg w-full p-6 shadow-2xl relative max-h-[90vh] flex flex-col">
+            <button id="btn-close-leaderboard" class="absolute top-4 right-4 text-slate-400 hover:text-slate-200 text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="flex items-center space-x-3 mb-4">
+                <div class="p-3 bg-amber-500/20 text-amber-500 rounded-2xl border border-amber-500/30">
+                    <i class="fa-solid fa-trophy text-2xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-black">Global Streak Leaderboard</h3>
+                    <p class="text-xs text-slate-400">Top language learners & highest combo records</p>
+                </div>
+            </div>
+
+            <div class="overflow-y-auto flex-grow pr-1 space-y-2" id="global-leaderboard-records">
+                <!-- Records Populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- MULTIPLAYER LOBBY MODAL -->
+    <div id="lobby-modal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="glass-panel rounded-3xl max-w-2xl w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button id="btn-close-lobby" class="absolute top-4 right-4 text-slate-400 hover:text-slate-200 text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="flex items-center space-x-3 mb-5">
+                <div class="p-3 bg-purple-500/20 text-purple-400 rounded-2xl border border-purple-500/30">
+                    <i class="fa-solid fa-network-wired text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-black">WebRTC Room Lobby</h3>
+                    <p class="text-xs text-purple-400">Direct Peer-to-Peer Room Joining</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="space-y-3">
+                    <!-- Host Room -->
+                    <div class="bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 p-3.5 rounded-2xl">
+                        <span class="text-xs font-bold block mb-2">Host Room</span>
+                        <button id="btn-create-room" class="w-full bg-pink-600 hover:bg-pink-500 text-white text-xs font-bold py-2 rounded-xl transition">
+                            Generate Room Code
+                        </button>
+                        <div id="host-code-display" class="hidden mt-2 p-2 bg-slate-200 dark:bg-slate-950 rounded-xl text-center">
+                            <span class="text-xs font-semibold">Share Room Code: <strong id="lbl-room-code" class="text-pink-500 font-mono text-sm">------</strong></span>
+                        </div>
+                    </div>
+
+                    <!-- Join Room -->
+                    <div class="bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 p-3.5 rounded-2xl">
+                        <span class="text-xs font-bold block mb-2">Join Existing Room</span>
+                        <div class="flex space-x-2">
+                            <input id="input-join-code" type="text" placeholder="6-digit Code" class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-xs px-3 py-2 rounded-xl font-mono uppercase focus:outline-none">
+                            <button id="btn-join-room-code" class="bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold px-3 py-2 rounded-xl transition">Join</button>
+                        </div>
+                        <p id="peer-status-msg" class="text-[10px] text-slate-400 mt-1.5"></p>
+                    </div>
+
+                    <!-- AI Bot Add -->
+                    <div class="bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 p-3 rounded-2xl flex items-center justify-between">
+                        <span class="text-xs font-bold">Add AI Bot Opponent</span>
+                        <button id="btn-add-bot" class="bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition">Add Bot</button>
+                    </div>
+                </div>
+
+                <!-- Roster -->
+                <div class="bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 p-3.5 rounded-2xl flex flex-col justify-between">
+                    <div>
+                        <span class="text-xs font-bold block mb-2">Lobby Players</span>
+                        <div id="room-roster-list" class="space-y-1.5"></div>
+                    </div>
+                    <button id="btn-start-multiplayer-match" class="w-full mt-4 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold py-2.5 rounded-xl transition">
+                        Start Match
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PROFILE MODAL -->
+    <div id="auth-modal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="glass-panel rounded-3xl max-w-sm w-full p-6 shadow-2xl relative">
+            <button id="btn-close-auth" class="absolute top-4 right-4 text-slate-400 hover:text-slate-200 text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <h3 class="text-lg font-black mb-4 text-center">Player Profile</h3>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold mb-1">Display Name</label>
+                    <input id="input-username" type="text" value="Student_Ahmad" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs px-3 py-2 rounded-xl focus:outline-none">
+                </div>
+                <button id="btn-save-auth" class="w-full bg-pink-600 hover:bg-pink-500 text-white text-xs font-bold py-2.5 rounded-xl transition">Save Profile</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN GAME LOGIC SCRIPT -->
+    <script>
+        const LINGUISTIC_DATABASE = {
+            standard: {
+                name: "Standard Malay",
+                beginner: [
+                    { id: 'm1', term: 'Makan', english: 'To eat', note: 'Essential verb' },
+                    { id: 'm2', term: 'Rumah', english: 'House / Home', note: 'Noun' },
+                    { id: 'm3', term: 'Kawan', english: 'Friend', note: 'Noun' },
+                    { id: 'm4', term: 'Gembira', english: 'Happy', note: 'Adjective' }
+                ],
+                intermediate: [
+                    { id: 'm5', term: 'Kacang je', english: 'Piece of cake / Very easy', note: 'Idiom' },
+                    { id: 'm6', term: 'Pecah tembelang', english: 'Spill the beans', note: 'Idiom' },
+                    { id: 'm7', term: 'Bekerjasama', english: 'Working together', note: 'Verb' },
+                    { id: 'm8', term: 'Tanggungjawab', english: 'Responsibility', note: 'Noun' },
+                    { id: 'm9', term: 'Kerajinan', english: 'Diligence', note: 'Adjective' },
+                    { id: 'm10', term: 'Persefahaman', english: 'Mutual understanding', note: 'Noun' }
+                ],
+                advanced: [
+                    { id: 'm11', term: 'Sambil menyelam minum air', english: 'Kill two birds with one stone', note: 'Idiom' },
+                    { id: 'm12', term: 'Tunggu kucing bertanduk', english: 'When pigs fly', note: 'Idiom' },
+                    { id: 'm13', term: 'Hujan bak dicurah-curah', english: 'Raining cats and dogs', note: 'Idiom' },
+                    { id: 'm14', term: 'Hati berbunga-bunga', english: 'On cloud nine', note: 'Idiom' },
+                    { id: 'm15', term: 'Bagai aur dengan tebing', english: 'Mutually supporting each other', note: 'Proverb' },
+                    { id: 'm16', term: 'Ada gula ada semut', english: 'Where wealth is, people gather', note: 'Proverb' },
+                    { id: 'm17', term: 'Melentur buluh biarlah dari rebungnya', english: 'Educate young', note: 'Proverb' },
+                    { id: 'm18', term: 'Berat sama dipikul', english: 'Sharing burdens in unity', note: 'Proverb' }
+                ]
+            },
+            kedah: {
+                name: "Loghat Kedah",
+                beginner: [
+                    { id: 'k1', term: 'Habaq', english: 'To tell / inform', note: 'Verb' },
+                    { id: 'k2', term: 'Depa', english: 'They / Them', note: 'Pronoun' },
+                    { id: 'k3', term: 'Cek', english: 'I / Me', note: 'Pronoun' },
+                    { id: 'k4', term: 'Gegaq', english: 'To shake / vibrate', note: 'Verb' }
+                ],
+                intermediate: [
+                    { id: 'k5', term: 'Kacang ja', english: 'Piece of cake', note: 'Idiom' },
+                    { id: 'k6', term: 'Mai singgah', english: 'Come over and drop by', note: 'Hospitality' },
+                    { id: 'k7', term: 'Satgi', english: 'In a little while', note: 'Adverb' },
+                    { id: 'k8', term: 'Lawa segak', english: 'Attractive / Handsome', note: 'Adjective' },
+                    { id: 'k9', term: 'Baloq iau', english: 'Extremely lazy', note: 'Adjective' },
+                    { id: 'k10', term: 'Jawaq face', english: 'Frowning / Sour look', note: 'Idiom' }
+                ],
+                advanced: [
+                    { id: 'k11', term: 'Pi mai pi mai tang tu juga', english: 'Going in circles without progress', note: 'Idiom' },
+                    { id: 'k12', term: 'Dok buat leceh', english: 'Causing unnecessary trouble', note: 'Phrase' },
+                    { id: 'k13', term: 'Ligan sampai dapat', english: 'Chasing until caught', note: 'Idiom' },
+                    { id: 'k14', term: 'Seronok sakan', english: 'Overjoyed / Having a blast', note: 'Idiom' },
+                    { id: 'k15', term: 'Mercik hawaq', english: 'Boiling hot weather', note: 'Weather' },
+                    { id: 'k16', term: 'Kenyang menyepuk', english: 'Completely stuffed with food', note: 'Idiom' },
+                    { id: 'k17', term: 'Duduk berkelanaq', english: 'Sitting messy / scattered', note: 'Idiom' },
+                    { id: 'k18', term: 'Gatai merenyam', english: 'Flirtatious / Restless', note: 'Adjective' }
+                ]
+            },
+            kelantan: {
+                name: "Loghat Kelantan",
+                beginner: [
+                    { id: 'kl1', term: 'Gapo', english: 'What', note: 'Question' },
+                    { id: 'kl2', term: 'Demo', english: 'You', note: 'Pronoun' },
+                    { id: 'kl3', term: 'Ore', english: 'Person / People', note: 'Noun' },
+                    { id: 'kl4', term: 'Sohor', english: 'Famous', note: 'Adjective' }
+                ],
+                intermediate: [
+                    { id: 'kl5', term: 'Kacang reja', english: 'Piece of cake / Very simple', note: 'Idiom' },
+                    { id: 'kl6', term: 'Oyak ka kawe', english: 'Spill the details to me', note: 'Phrase' },
+                    { id: 'kl7', term: 'Molek do’oh', english: 'Extremely good / beautiful', note: 'Superlative' },
+                    { id: 'kl8', term: 'Gomo Kelate Gomo', english: 'Fight & push forward', note: 'Motto' },
+                    { id: 'kl9', term: 'Yak bokte', english: 'Exclamation of surprise', note: 'Interjection' },
+                    { id: 'kl10', term: 'Comel lote', english: 'Incredibly cute', note: 'Pair' }
+                ],
+                advanced: [
+                    { id: 'kl11', term: 'Hujan lebat ya amat', english: 'Raining cats and dogs', note: 'Weather' },
+                    { id: 'kl12', term: 'Manis leting', english: 'Extremely sweet', note: 'Modifier' },
+                    { id: 'kl13', term: 'Masin pekaq', english: 'Extremely salty', note: 'Modifier' },
+                    { id: 'kl14', term: 'Hitam sekutong', english: 'Pitch black', note: 'Color' },
+                    { id: 'kl15', term: 'Kelewek habis habang', english: 'Bent out of shape', note: 'State' },
+                    { id: 'kl16', term: 'Nyo pakak wat bodoh', english: 'Pretending not to notice', note: 'Idiom' },
+                    { id: 'kl17', term: 'Bekoh nyor berenang', english: 'Completely lost at sea', note: 'Metaphor' },
+                    { id: 'kl18', term: 'Jewe meme keno', english: 'Sulk until scolded', note: 'Behavior' }
+                ]
+            }
+        };
+
+        class GameEngine {
+            constructor() {
+                this.currentDialect = 'standard';
+                this.currentLevel = 'beginner';
+                this.activePairs = [];
+                this.selectedSourceCard = null;
+
+                this.score = 0;
+                this.moves = 0;
+                this.correctMatches = 0;
+                this.streakMultiplier = 1;
+
+                this.timerInterval = null;
+                this.secondsElapsed = 0;
+                this.isTimerRunning = false;
+                this.soundEnabled = true;
+
+                // WebRTC & Players Roster
+                this.peer = null;
+                this.roomCode = null;
+                this.connections = [];
+                this.players = [];
+
+                this.initTheme();
+                this.initDOM();
+                this.initPeerJS();
+                this.bindEvents();
+                this.loadLeaderboardData();
+                this.startSession();
+            }
+
+            initTheme() {
+                const savedTheme = localStorage.getItem('lexi_theme') || 'dark';
+                if (savedTheme === 'dark') {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
+            }
+
+            toggleTheme() {
+                const isDark = document.documentElement.classList.toggle('dark');
+                localStorage.setItem('lexi_theme', isDark ? 'dark' : 'light');
+            }
+
+            initDOM() {
+                this.domDialectSelect = document.getElementById('select-dialect');
+                this.domSourceContainer = document.getElementById('source-terms-container');
+                this.domTargetContainer = document.getElementById('target-slots-container');
+
+                this.domScore = document.getElementById('stat-score');
+                this.domStreak = document.getElementById('stat-streak');
+                this.domTimer = document.getElementById('stat-timer');
+                this.domAccuracy = document.getElementById('stat-accuracy');
+                this.domAttempts = document.getElementById('stat-attempts');
+                this.domProgressText = document.getElementById('stat-progress-text');
+                this.domProgressBar = document.getElementById('stat-progress-bar');
+                this.domLevelTitle = document.getElementById('stat-level-title');
+
+                this.domBadgeDialect = document.getElementById('badge-dialect');
+                this.domBadgeLevel = document.getElementById('badge-level');
+
+                this.domVictoryModal = document.getElementById('victory-modal');
+                this.domLobbyModal = document.getElementById('lobby-modal');
+                this.domAuthModal = document.getElementById('auth-modal');
+                this.domLeaderboardModal = document.getElementById('leaderboard-modal');
+
+                this.domSoundBtn = document.getElementById('btn-sound-toggle');
+                this.domSoundIcon = document.getElementById('sound-icon');
+            }
+
+            initPeerJS() {
+                this.peer = new Peer();
+                this.peer.on('open', (id) => {
+                    console.log('PeerJS initialized with ID:', id);
+                });
+
+                this.peer.on('connection', (conn) => {
+                    this.connections.push(conn);
+                    this.setupConnectionListeners(conn);
+                });
+            }
+
+            setupConnectionListeners(conn) {
+                conn.on('open', () => {
+                    document.getElementById('peer-status-msg').textContent = "Connected to room peer!";
+                    const opponentName = "Peer_Player";
+                    this.addPlayerToRoster(opponentName, false);
+                });
+
+                conn.on('data', (data) => {
+                    if (data.type === 'SCORE_UPDATE') {
+                        this.updateOpponentScore(data.id, data.score, data.matches);
+                    }
+                });
+            }
+
+            bindEvents() {
+                document.getElementById('btn-theme-toggle').addEventListener('click', () => this.toggleTheme());
+
+                this.domDialectSelect.addEventListener('change', (e) => {
+                    this.currentDialect = e.target.value;
+                    this.startSession();
+                });
+
+                document.querySelectorAll('.btn-diff-select').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.btn-diff-select').forEach(b => {
+                            b.className = "btn-diff-select py-1.5 text-xs rounded-xl font-semibold border bg-slate-200 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300";
+                        });
+                        e.target.className = "btn-diff-select py-1.5 text-xs rounded-xl font-bold border bg-pink-600 border-pink-500 text-white shadow-sm";
+                        this.currentLevel = e.target.dataset.level;
+                        this.startSession();
+                    });
+                });
+
+                document.getElementById('btn-reset-session').addEventListener('click', () => this.startSession());
+                document.getElementById('btn-modal-next').addEventListener('click', () => {
+                    this.domVictoryModal.classList.add('hidden');
+                    this.startSession();
+                });
+
+                this.domSoundBtn.addEventListener('click', () => {
+                    this.soundEnabled = !this.soundEnabled;
+                    this.domSoundIcon.className = this.soundEnabled ? "fa-solid fa-volume-high text-pink-500" : "fa-solid fa-volume-xmark text-slate-400";
+                });
+
+                // Lobby Controls
+                document.getElementById('btn-open-lobby').addEventListener('click', () => this.domLobbyModal.classList.remove('hidden'));
+                document.getElementById('btn-close-lobby').addEventListener('click', () => this.domLobbyModal.classList.add('hidden'));
+
+                document.getElementById('btn-create-room').addEventListener('click', () => {
+                    this.roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+                    document.getElementById('lbl-room-code').textContent = this.roomCode;
+                    document.getElementById('host-code-display').classList.remove('hidden');
+                    
+                    // Re-initialize peer with fixed room code ID for direct join
+                    if(this.peer) this.peer.destroy();
+                    this.peer = new Peer(`fyp-lexi-${this.roomCode}`);
+                    this.peer.on('connection', (conn) => {
+                        this.connections.push(conn);
+                        this.setupConnectionListeners(conn);
+                    });
+                });
+
+                document.getElementById('btn-join-room-code').addEventListener('click', () => {
+                    const code = document.getElementById('input-join-code').value.trim().toUpperCase();
+                    if (code) {
+                        const targetPeerId = `fyp-lexi-${code}`;
+                        document.getElementById('peer-status-msg').textContent = `Connecting to ${code}...`;
+                        const conn = this.peer.connect(targetPeerId);
+                        this.setupConnectionListeners(conn);
+                    }
+                });
+
+                document.getElementById('btn-add-bot').addEventListener('click', () => {
+                    const botNames = ['Smart_Bot', 'Speedy_Bot', 'Dialect_Bot'];
+                    const botName = botNames[this.players.filter(p => p.isBot).length % botNames.length];
+                    this.addPlayerToRoster(botName, true);
+                });
+
+                document.getElementById('btn-start-multiplayer-match').addEventListener('click', () => {
+                    this.domLobbyModal.classList.add('hidden');
+                    this.startSession();
+                });
+
+                // Global Leaderboard
+                document.getElementById('btn-open-leaderboard').addEventListener('click', () => {
+                    this.renderGlobalLeaderboard();
+                    this.domLeaderboardModal.classList.remove('hidden');
+                });
+                document.getElementById('btn-close-leaderboard').addEventListener('click', () => this.domLeaderboardModal.classList.add('hidden'));
+
+                // Auth Profile
+                document.getElementById('btn-user-profile').addEventListener('click', () => this.domAuthModal.classList.remove('hidden'));
+                document.getElementById('btn-close-auth').addEventListener('click', () => this.domAuthModal.classList.add('hidden'));
+                document.getElementById('btn-save-auth').addEventListener('click', () => {
+                    const name = document.getElementById('input-username').value || "Student";
+                    document.getElementById('user-display-name').textContent = name;
+                    document.getElementById('user-avatar-badge').textContent = name.charAt(0).toUpperCase();
+                    this.domAuthModal.classList.add('hidden');
+                    this.updateRosterUI();
+                });
+            }
+
+            addPlayerToRoster(name, isBot = false) {
+                const newPlayer = {
+                    id: 'p_' + Math.random().toString(36).substr(2, 5),
+                    name: name,
+                    score: 0,
+                    matches: 0,
+                    isBot: isBot
+                };
+                this.players.push(newPlayer);
+                this.updateRosterUI();
+                this.renderLiveScoreboard();
+            }
+
+            updateRosterUI() {
+                const container = document.getElementById('room-roster-list');
+                const myName = document.getElementById('user-display-name').textContent;
+                
+                let html = `
+                    <div class="flex items-center justify-between text-xs p-2 bg-slate-200 dark:bg-slate-800 rounded-xl">
+                        <span class="font-bold text-pink-500"><i class="fa-solid fa-user mr-1.5"></i>${myName} (You)</span>
+                        <span class="text-[10px] bg-emerald-500/20 text-emerald-500 px-2 py-0.5 rounded font-bold">READY</span>
+                    </div>
+                `;
+
+                this.players.forEach(p => {
+                    html += `
+                        <div class="flex items-center justify-between text-xs p-2 bg-slate-200 dark:bg-slate-800 rounded-xl">
+                            <span class="font-bold ${p.isBot ? 'text-purple-400' : 'text-cyan-400'}">
+                                <i class="fa-solid ${p.isBot ? 'fa-robot' : 'fa-user'} mr-1.5"></i>${p.name}
+                            </span>
+                            <span class="text-[10px] bg-emerald-500/20 text-emerald-500 px-2 py-0.5 rounded font-bold">READY</span>
+                        </div>
+                    `;
+                });
+
+                container.innerHTML = html;
+            }
+
+            startSession() {
+                this.stopTimer();
+                this.secondsElapsed = 0;
+                this.score = 0;
+                this.moves = 0;
+                this.correctMatches = 0;
+                this.streakMultiplier = 1.0;
+                this.selectedSourceCard = null;
+                this.domVictoryModal.classList.add('hidden');
+
+                const moduleData = LINGUISTIC_DATABASE[this.currentDialect];
+                const pool = moduleData[this.currentLevel];
+
+                this.activePairs = [...pool];
+
+                const shuffledSources = [...this.activePairs].sort(() => Math.random() - 0.5);
+                const shuffledTargets = [...this.activePairs].sort(() => Math.random() - 0.5);
+
+                this.updateHeaderBadges(moduleData.name);
+                this.updateMetricsUI();
+                this.renderBoard(shuffledSources, shuffledTargets);
+                this.renderLiveScoreboard();
+                this.startBotSimulation();
+            }
+
+            updateHeaderBadges(fullName) {
+                this.domBadgeDialect.textContent = fullName;
+                this.domBadgeLevel.textContent = `${this.currentLevel.toUpperCase()} (${this.activePairs.length} Pairs)`;
+                this.domLevelTitle.textContent = this.currentLevel.charAt(0).toUpperCase() + this.currentLevel.slice(1);
+            }
+
+            renderBoard(sources, targets) {
+                this.domSourceContainer.innerHTML = '';
+                this.domTargetContainer.innerHTML = '';
+
+                sources.forEach((item) => {
+                    const card = document.createElement('div');
+                    card.className = 'draggable-source glass-card rounded-xl p-3 flex items-center justify-between border';
+                    card.draggable = true;
+                    card.dataset.id = item.id;
+                    card.dataset.term = item.term;
+
+                    card.innerHTML = `
+                        <div class="flex items-center space-x-2.5">
+                            <span class="cursor-grab text-slate-400"><i class="fa-solid fa-grip-vertical"></i></span>
+                            <div>
+                                <span class="font-extrabold text-xs sm:text-sm text-pink-500 dark:text-pink-400 block">${item.term}</span>
+                                <span class="text-[10px] text-slate-400 block">${item.note}</span>
+                            </div>
+                        </div>
+                        <button class="btn-tts p-1.5 text-xs text-pink-500 hover:text-pink-400" title="Listen Audio">
+                            <i class="fa-solid fa-volume-high"></i>
+                        </button>
+                    `;
+
+                    card.querySelector('.btn-tts').addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.speakText(item.term);
+                    });
+
+                    card.addEventListener('dragstart', (e) => {
+                        if (!this.isTimerRunning) this.startTimer();
+                        e.dataTransfer.setData('text/plain', item.id);
+                        card.classList.add('opacity-50');
+                    });
+                    card.addEventListener('dragend', () => card.classList.remove('opacity-50'));
+
+                    card.addEventListener('click', () => {
+                        if (!this.isTimerRunning) this.startTimer();
+                        this.handleSourceClickSelect(card);
+                    });
+
+                    this.domSourceContainer.appendChild(card);
+                });
+
+                targets.forEach((item) => {
+                    const slot = document.createElement('div');
+                    slot.className = 'drop-target bg-slate-100 dark:bg-slate-900/80 border-2 border-dashed border-slate-300 dark:border-slate-700/80 rounded-xl p-3 flex items-center justify-between min-h-[60px]';
+                    slot.dataset.id = item.id;
+
+                    slot.innerHTML = `
+                        <div class="flex-grow pr-2">
+                            <span class="text-xs font-bold block text-slate-800 dark:text-slate-200">${item.english}</span>
+                            <span class="text-[10px] text-slate-400 block">Drop card here</span>
+                        </div>
+                        <div class="slot-status-icon text-slate-400 text-xs">
+                            <i class="fa-regular fa-square"></i>
+                        </div>
+                    `;
+
+                    slot.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                        if (!slot.classList.contains('matched-correct')) slot.classList.add('drag-over');
+                    });
+                    slot.addEventListener('dragleave', () => slot.classList.remove('drag-over'));
+
+                    slot.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        slot.classList.remove('drag-over');
+                        const droppedId = e.dataTransfer.getData('text/plain');
+                        this.processPlacement(droppedId, slot);
+                    });
+
+                    slot.addEventListener('click', () => {
+                        if (this.selectedSourceCard && !slot.classList.contains('matched-correct')) {
+                            const sourceId = this.selectedSourceCard.dataset.id;
+                            this.processPlacement(sourceId, slot);
+                        }
+                    });
+
+                    this.domTargetContainer.appendChild(slot);
+                });
+            }
+
+            handleSourceClickSelect(cardElement) {
+                if (cardElement.classList.contains('opacity-30')) return;
+
+                document.querySelectorAll('.draggable-source').forEach(el => el.classList.remove('selected-click'));
+
+                if (this.selectedSourceCard === cardElement) {
+                    this.selectedSourceCard = null;
+                } else {
+                    this.selectedSourceCard = cardElement;
+                    cardElement.classList.add('selected-click');
+                    this.speakText(cardElement.dataset.term);
+                }
+            }
+
+            processPlacement(sourceId, targetSlot) {
+                if (targetSlot.classList.contains('matched-correct')) return;
+
+                const targetId = targetSlot.dataset.id;
+                this.moves++;
+
+                if (sourceId === targetId) {
+                    this.correctMatches++;
+                    this.score += 100 * this.streakMultiplier;
+                    this.streakMultiplier += 0.2;
+
+                    this.playSynthTone(587.33, 0.15);
+
+                    if (typeof confetti === 'function') {
+                        confetti({ particleCount: 35, spread: 50, origin: { y: 0.7 } });
+                    }
+
+                    targetSlot.classList.remove('border-dashed');
+                    targetSlot.classList.add('matched-correct');
+
+                    const sourceItem = this.activePairs.find(p => p.id === sourceId);
+                    targetSlot.innerHTML = `
+                        <div>
+                            <span class="text-xs font-bold text-emerald-500 block"><i class="fa-solid fa-check mr-1"></i>${sourceItem.term}</span>
+                            <span class="text-[11px] text-slate-700 dark:text-slate-200 block">${sourceItem.english}</span>
+                        </div>
+                        <div class="text-emerald-500 text-xs"><i class="fa-solid fa-lock"></i></div>
+                    `;
+
+                    const sourceCard = document.querySelector(`.draggable-source[data-id="${sourceId}"]`);
+                    if (sourceCard) {
+                        sourceCard.draggable = false;
+                        sourceCard.classList.add('opacity-30', 'pointer-events-none');
+                        sourceCard.classList.remove('selected-click');
+                    }
+                    this.selectedSourceCard = null;
+
+                    this.updateMetricsUI();
+                    this.broadcastMyScore();
+
+                    if (this.correctMatches === this.activePairs.length) {
+                        this.handleVictory();
+                    }
+                } else {
+                    this.streakMultiplier = 1.0;
+                    this.playSynthTone(220, 0.2);
+
+                    targetSlot.classList.add('matched-error');
+                    setTimeout(() => targetSlot.classList.remove('matched-error'), 400);
+
+                    if (this.selectedSourceCard) {
+                        this.selectedSourceCard.classList.remove('selected-click');
+                        this.selectedSourceCard = null;
+                    }
+
+                    this.updateMetricsUI();
+                }
+            }
+
+            updateMetricsUI() {
+                this.domScore.textContent = Math.round(this.score);
+                this.domStreak.textContent = this.streakMultiplier.toFixed(1);
+                this.domAttempts.textContent = `${this.moves} Matches`;
+
+                const accuracy = this.moves > 0 ? Math.round((this.correctMatches / this.moves) * 100) : 100;
+                this.domAccuracy.textContent = accuracy;
+
+                const percent = Math.round((this.correctMatches / this.activePairs.length) * 100);
+                this.domProgressBar.style.width = `${percent}%`;
+                this.domProgressText.textContent = `${this.correctMatches} / ${this.activePairs.length}`;
+            }
+
+            broadcastMyScore() {
+                this.renderLiveScoreboard();
+                this.connections.forEach(conn => {
+                    conn.send({
+                        type: 'SCORE_UPDATE',
+                        id: 'host',
+                        score: Math.round(this.score),
+                        matches: this.correctMatches
+                    });
+                });
+            }
+
+            updateOpponentScore(id, score, matches) {
+                const player = this.players.find(p => p.id === id);
+                if (player) {
+                    player.score = score;
+                    player.matches = matches;
+                    this.renderLiveScoreboard();
+                }
+            }
+
+            startBotSimulation() {
+                const bots = this.players.filter(p => p.isBot);
+                bots.forEach(bot => {
+                    bot.score = 0;
+                    bot.matches = 0;
+                    const botInterval = setInterval(() => {
+                        if (bot.matches < this.activePairs.length && this.correctMatches < this.activePairs.length) {
+                            bot.matches++;
+                            bot.score += Math.round(80 + Math.random() * 40);
+                            this.renderLiveScoreboard();
+                        } else {
+                            clearInterval(botInterval);
+                        }
+                    }, 4000 + Math.random() * 3000);
+                });
+            }
+
+            renderLiveScoreboard() {
+                const container = document.getElementById('live-scoreboard-list');
+                const myName = document.getElementById('user-display-name').textContent;
+
+                const allParticipants = [
+                    { name: myName + " (You)", score: Math.round(this.score), matches: this.correctMatches, total: this.activePairs.length, isUser: true },
+                    ...this.players.map(p => ({ name: p.name, score: p.score, matches: p.matches, total: this.activePairs.length, isUser: false, isBot: p.isBot }))
+                ];
+
+                allParticipants.sort((a, b) => b.score - a.score);
+
+                let html = '';
+                allParticipants.forEach((p, idx) => {
+                    html += `
+                        <div class="flex items-center justify-between p-2.5 rounded-xl ${p.isUser ? 'bg-pink-500/10 border border-pink-500/30' : 'bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800'}">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs font-black w-4 text-slate-400">#${idx + 1}</span>
+                                <div>
+                                    <span class="text-xs font-bold block ${p.isUser ? 'text-pink-500' : p.isBot ? 'text-purple-400' : 'text-cyan-400'}">${p.name}</span>
+                                    <span class="text-[10px] text-slate-400">${p.matches}/${p.total} Pairs</span>
+                                </div>
+                            </div>
+                            <span class="text-sm font-black text-amber-500">${p.score} <span class="text-[10px] text-slate-400">pts</span></span>
+                        </div>
+                    `;
+                });
+
+                container.innerHTML = html;
+            }
+
+            startTimer() {
+                this.isTimerRunning = true;
+                this.timerInterval = setInterval(() => {
+                    this.secondsElapsed++;
+                    const mins = String(Math.floor(this.secondsElapsed / 60)).padStart(2, '0');
+                    const secs = String(this.secondsElapsed % 60).padStart(2, '0');
+                    this.domTimer.textContent = `${mins}:${secs}`;
+                }, 1000);
+            }
+
+            stopTimer() {
+                this.isTimerRunning = false;
+                if (this.timerInterval) clearInterval(this.timerInterval);
+            }
+
+            handleVictory() {
+                this.stopTimer();
+
+                if (typeof confetti === 'function') {
+                    confetti({ particleCount: 100, spread: 90, origin: { y: 0.6 } });
+                }
+
+                const mins = String(Math.floor(this.secondsElapsed / 60)).padStart(2, '0');
+                const secs = String(this.secondsElapsed % 60).padStart(2, '0');
+                const accuracy = Math.round((this.correctMatches / this.moves) * 100);
+
+                document.getElementById('modal-score').textContent = Math.round(this.score);
+                document.getElementById('modal-time').textContent = `${mins}:${secs}`;
+                document.getElementById('modal-accuracy').textContent = `${accuracy}%`;
+
+                this.saveGlobalScore(Math.round(this.score), this.streakMultiplier);
+                setTimeout(() => this.domVictoryModal.classList.remove('hidden'), 500);
+            }
+
+            saveGlobalScore(finalScore, maxStreak) {
+                const myName = document.getElementById('user-display-name').textContent;
+                let records = JSON.parse(localStorage.getItem('lexi_global_leaderboard') || '[]');
+                
+                records.push({
+                    name: myName,
+                    score: finalScore,
+                    streak: maxStreak.toFixed(1),
+                    dialect: LINGUISTIC_DATABASE[this.currentDialect].name,
+                    date: new Date().toLocaleDateString()
+                });
+
+                records.sort((a, b) => b.score - a.score);
+                records = records.slice(0, 10);
+                localStorage.setItem('lexi_global_leaderboard', JSON.stringify(records));
+            }
+
+            loadLeaderboardData() {
+                if (!localStorage.getItem('lexi_global_leaderboard')) {
+                    const defaultRecords = [
+                        { name: 'Siti_Kedah', score: 950, streak: '2.4', dialect: 'Loghat Kedah', date: 'Daily Top' },
+                        { name: 'Ahmad_Kelate', score: 880, streak: '2.0', dialect: 'Loghat Kelantan', date: 'Daily Top' },
+                        { name: 'Student_Demo', score: 720, streak: '1.6', dialect: 'Standard Malay', date: 'Daily Top' }
+                    ];
+                    localStorage.setItem('lexi_global_leaderboard', JSON.stringify(defaultRecords));
+                }
+            }
+
+            renderGlobalLeaderboard() {
+                const container = document.getElementById('global-leaderboard-records');
+                const records = JSON.parse(localStorage.getItem('lexi_global_leaderboard') || '[]');
+
+                let html = '';
+                records.forEach((rec, idx) => {
+                    const badgeColor = idx === 0 ? 'bg-amber-500/20 text-amber-500 border-amber-500/40' : 
+                                     idx === 1 ? 'bg-slate-300/20 text-slate-300 border-slate-300/40' : 
+                                     idx === 2 ? 'bg-orange-500/20 text-orange-400 border-orange-500/40' : 'bg-slate-800 text-slate-400 border-slate-700';
+                    
+                    html += `
+                        <div class="flex items-center justify-between p-3 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">
+                            <div class="flex items-center space-x-3">
+                                <span class="w-7 h-7 rounded-full flex items-center justify-center font-black text-xs border ${badgeColor}">
+                                    ${idx + 1}
+                                </span>
+                                <div>
+                                    <span class="font-bold text-xs block">${rec.name}</span>
+                                    <span class="text-[10px] text-slate-400">${rec.dialect} • Streak ${rec.streak}x</span>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <span class="font-black text-pink-500 text-sm block">${rec.score} pts</span>
+                                <span class="text-[9px] text-slate-400">${rec.date}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                container.innerHTML = html;
+            }
+
+            speakText(text) {
+                if (!this.soundEnabled) return;
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.lang = 'id-ID';
+                    utterance.rate = 0.9;
+                    window.speechSynthesis.speak(utterance);
+                }
+            }
+
+            playSynthTone(freq, duration) {
+                if (!this.soundEnabled) return;
+                try {
+                    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+
+                    gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+
+                    osc.start();
+                    osc.stop(ctx.currentTime + duration);
+                } catch(e) {}
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            window.app = new GameEngine();
+        });
+    </script>
+</body>
+</html>
+```
